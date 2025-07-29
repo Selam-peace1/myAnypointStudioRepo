@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="c33617f5-1858-40b9-8a01-40c6b110425e" >
+		<http:listener-connection host="localhost" port="8081" />
+	</http:listener-config>
+	<flow name="choicerouterFlow" doc:id="06eb8027-6471-4a88-97fb-9c9b01553389" >
+		<http:listener doc:name="Listener" doc:id="16c00da9-8df9-4f0f-a6e4-0856183a4824" config-ref="HTTP_Listener_config" path="/choicerouter"/>
+		<set-variable value="#[attributes.queryParams.language]" doc:name="Set Variable" doc:id="94d16a28-0b4c-4ac8-a7e8-1323b1789dcf" variableName="language"/>
+		<choice doc:name="Choice" doc:id="4f650768-20b8-4a43-b60a-42d6a69ab5ff" >
+			<when expression="#[vars.language == 'spanish']">
+				<set-payload value="Hola" doc:name="Set Payload" doc:id="721bc0f6-da6c-4613-b215-07eb80d772c6" />
+			</when>
+			<when expression="#[vars.language == 'english']">
+				<set-payload value="Hello" doc:name="Set Payload" doc:id="601ba2a8-c986-41ba-9506-ea84b3ee0b48" />
+			</when>
+			<when expression="#[vars.language == 'hindi']">
+				<set-payload value="namaste" doc:name="Set Payload" doc:id="158dff44-7d3e-4a6c-91c0-d7cdd87474f2" />
+			</when>
+			<otherwise >
+				<set-payload value="Selam" doc:name="Set Payload" doc:id="b3f4960f-e460-4424-8b1c-2dd0ade01a2a" />
+			</otherwise>
+		</choice>
+		<ee:transform doc:name="Transform Message" doc:id="728c9019-d210-41af-bdc0-695d677116d8" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
