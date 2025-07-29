@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="batchprocessingFlow" doc:id="56691d82-1bd0-480d-9221-ba682ad3e225" >
+		<http:listener doc:name="Listener" doc:id="bd872bf5-b28a-479f-a0c0-55e239df4275" config-ref="HTTP_Listener_config" path="/batchProcessing"/>
+		<set-variable value="#[now()]" doc:name="startTime" doc:id="f9918fa2-9e7a-4d64-978a-4b4cdc441b11" variableName="startTime"/>
+		<db:select doc:name="Select" doc:id="86075dc7-3e75-4dfe-a081-61d62f40a248" config-ref="Database_Config">
+			<db:sql><![CDATA[Select * from fortest;]]></db:sql>
+		</db:select>
+		<batch:job jobName="batchprocessingBatch_Job" doc:id="43414e43-bc59-4bda-a9e5-a20d72225a02" schedulingStrategy="ROUND_ROBIN">
+			<batch:process-records >
+				<batch:step name="Batch_Step" doc:id="b4ea3ba7-5a80-4dcc-9e93-1b311c1ff029" >
+					<ee:transform doc:name="Transform Message" doc:id="a89207e7-3d46-452c-9d9e-f370426419fe">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+	name: payload.name,
+	id: payload.id as String,
+	age: payload.age as String,
+	lastname: payload.lastname
+}]]></ee:set-payload>
+						</ee:message>
+						<ee:variables >
+							<ee:set-variable variableName="aspayload" ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	name: payload.name,
+	id: payload.id,
+	age: payload.age+2,
+	lastname: payload.lastname
+}]]></ee:set-variable>
+						</ee:variables>
+					</ee:transform>
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="835457e2-4476-4de6-b244-0d7839875854" size="10">
+						<set-variable value="#[payload]" doc:name="Set Variable" doc:id="bf569007-b71a-40eb-8c8e-2dc8c1114188" variableName="myPayload"/>
+						<db:bulk-insert doc:name="Bulk insert" doc:id="ea2993e1-b104-4f11-b198-f2e0bf79e677" config-ref="Database_Config">
+							<db:bulk-input-parameters ><![CDATA[#[vars.myPayload]]]></db:bulk-input-parameters>
+							<db:sql ><![CDATA[insert into from_fortest (id, name, lastname, age) values (:id, :name, :lastname, :age);
+]]></db:sql>
+						</db:bulk-insert>
+						<db:bulk-update doc:name="Bulk update" doc:id="1c85f8ee-e254-4426-bc80-9bb0b6adce4e" config-ref="Database_Config">
+							<db:bulk-input-parameters ><![CDATA[#[vars.myPayload]]]></db:bulk-input-parameters>
+							<db:sql ><![CDATA[update fortest set age= :age+2 where id= :id;]]></db:sql>
+						</db:bulk-update>
+					</batch:aggregator>
+				</batch:step>
+			</batch:process-records>
+		</batch:job>
+		<ee:transform doc:name="Transform Message" doc:id="506f859a-6671-442c-8b03-7b43158e00ff" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	totalTime: now() - vars.startTime
+	}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="784a5e2a-ce72-49bb-a12f-9889a1946f96" message="#[payload]"/>
+	</flow>
+</mule>
