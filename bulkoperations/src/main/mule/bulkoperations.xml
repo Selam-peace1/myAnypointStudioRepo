@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="914e3c12-8068-4a57-b5df-e6564b9964ad" >
+		<http:listener-connection host="localhost" port="8081" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="7e660db6-d863-4e29-a99d-f3cab9938c90" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="Selamet@123!" database="test1" />
+	</db:config>
+	<flow name="bulkoperationsFlow" doc:id="51c6df4e-36cc-4634-b995-194765b059b5" >
+		<http:listener doc:name="Listener" doc:id="51b5415f-8a6a-4238-82bb-886258bd5d81" config-ref="HTTP_Listener_config" path="/bulkinsert"/>
+		<db:bulk-insert doc:id="6afb78f6-b98f-48f5-a56b-d711b4ebace7" config-ref="Database_Config">
+			<db:sql ><![CDATA[INSERT INTO fortest (id,name,lastname,age) VALUES (:id,:name,:lastname,:age)]]></db:sql>
+		</db:bulk-insert>
+		<ee:transform doc:name="Transform Message" doc:id="516217e9-4aca-48f3-af2f-6218962b6e6b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
